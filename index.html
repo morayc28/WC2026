@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WC 2026 Auction</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green: #1a9e5c;
+    --green-dark: #0f7a42;
+    --green-light: #e8f7ef;
+    --amber: #e8a020;
+    --amber-light: #fdf3e0;
+    --red: #d63c3c;
+    --red-light: #fdeaea;
+    --ink: #111;
+    --ink2: #444;
+    --ink3: #888;
+    --rule: #e0e0e0;
+    --surface: #fff;
+    --bg: #f5f4f0;
+  }
+
+  body {
+    font-family: 'Barlow', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, .display {
+    font-family: 'Barlow Condensed', sans-serif;
+    letter-spacing: 0.02em;
+  }
+
+  /* ── LOBBY ── */
+  #lobbyScreen {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+  }
+
+  .lobby-logo {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 3rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    line-height: 1;
+    text-align: center;
+    margin-bottom: 0.25rem;
+  }
+  .lobby-logo span { color: var(--green); }
+  .lobby-sub {
+    font-size: 0.85rem;
+    color: var(--ink3);
+    text-align: center;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 2.5rem;
+  }
+
+  .lobby-card {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    padding: 2rem;
+    width: 100%;
+    max-width: 460px;
+  }
+
+  .lobby-card h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 1.25rem;
+  }
+
+  .form-row { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1rem; }
+  .form-row label { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink3); }
+  .form-row input, .form-row select {
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 0.6rem 0.8rem;
+    font-size: 1rem;
+    font-family: 'Barlow', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    width: 100%;
+  }
+  .form-row input:focus, .form-row select:focus { outline: 2px solid var(--green); border-color: transparent; }
+
+  .players-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem; }
+
+  .btn {
+    display: block; width: 100%; padding: 0.75rem;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1.1rem; font-weight: 700; letter-spacing: 0.05em;
+    border: none; border-radius: 8px; cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-green { background: var(--green); color: #fff; }
+  .btn-green:hover { background: var(--green-dark); }
+  .btn-outline { background: transparent; border: 1.5px solid var(--rule); color: var(--ink2); }
+  .btn-outline:hover { border-color: var(--green); color: var(--green); }
+  .btn-sm { width: auto; padding: 0.45rem 1rem; font-size: 0.95rem; }
+  .btn-red { background: var(--red); color: #fff; }
+  .btn-red:hover { background: #b53030; }
+
+  .divider { border: none; border-top: 1px solid var(--rule); margin: 1.25rem 0; }
+
+  .room-code-display {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 3rem; font-weight: 700; letter-spacing: 0.2em;
+    text-align: center; color: var(--green);
+    background: var(--green-light);
+    border-radius: 8px; padding: 0.75rem 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .room-code-hint { font-size: 0.8rem; color: var(--ink3); text-align: center; margin-bottom: 1rem; }
+
+  .waiting-list { margin: 1rem 0; }
+  .waiting-player {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.5rem 0.75rem; border-radius: 6px;
+    background: var(--bg); margin-bottom: 0.4rem;
+    font-size: 0.95rem;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+  .dot.empty { background: var(--rule); }
+
+  /* ── MAIN AUCTION ── */
+  #auctionScreen { display: none; }
+
+  .top-bar {
+    background: var(--ink);
+    color: #fff;
+    padding: 0.6rem 1.25rem;
+    display: flex; align-items: center; gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .top-bar .logo { font-family: 'Barlow Condensed', sans-serif; font-size: 1.2rem; font-weight: 700; letter-spacing: 0.05em; flex: 1; }
+  .top-bar .logo span { color: var(--green); }
+  .room-pill {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.9rem; letter-spacing: 0.1em;
+    background: rgba(255,255,255,0.1); border-radius: 20px;
+    padding: 0.25rem 0.75rem; color: #ccc;
+  }
+  .room-pill strong { color: #fff; }
+  .my-budget-pill {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.9rem; background: var(--green); color: #fff;
+    border-radius: 20px; padding: 0.25rem 0.75rem;
+  }
+
+  .auction-layout {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 1rem;
+    padding: 1rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  @media (max-width: 700px) {
+    .auction-layout { grid-template-columns: 1fr; }
+  }
+
+  /* Current team on the block */
+  .on-the-block {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+  }
+  .block-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--amber); margin-bottom: 0.5rem;
+  }
+  .block-team {
+    display: flex; align-items: center; gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  .block-flag { font-size: 3.5rem; line-height: 1; }
+  .block-name { font-family: 'Barlow Condensed', sans-serif; font-size: 2.2rem; font-weight: 700; line-height: 1; }
+  .block-group { font-size: 0.85rem; color: var(--ink3); margin-top: 2px; }
+
+  /* Timer */
+  .timer-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+  .timer-bar-wrap { flex: 1; height: 8px; background: var(--rule); border-radius: 4px; overflow: hidden; }
+  .timer-bar { height: 100%; background: var(--green); border-radius: 4px; transition: width 1s linear, background 1s; }
+  .timer-num {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1.5rem; font-weight: 700; min-width: 2.5rem; text-align: right;
+  }
+
+  /* Bid form */
+  .bid-form { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .bid-input {
+    border: 1.5px solid var(--rule); border-radius: 8px;
+    padding: 0.6rem 0.8rem; font-size: 1.1rem;
+    font-family: 'Barlow Condensed', sans-serif; font-weight: 600;
+    width: 130px; background: var(--bg);
+  }
+  .bid-input:focus { outline: 2px solid var(--green); border-color: transparent; }
+
+  /* Queue strip */
+  .queue-strip {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-size: 0.8rem; color: var(--ink3);
+    margin-bottom: 1rem; overflow: hidden;
+  }
+  .queue-flags { display: flex; gap: 0.3rem; overflow: hidden; }
+  .queue-flags span { font-size: 1.4rem; opacity: 0.45; }
+  .queue-flags span.nxt { opacity: 1; }
+
+  /* Sold notification */
+  .sold-toast {
+    background: var(--green-light); border: 1px solid var(--green);
+    border-radius: 8px; padding: 0.75rem 1rem;
+    font-size: 0.95rem; color: var(--green-dark);
+    margin-bottom: 1rem; display: none;
+  }
+
+  /* Team grid */
+  .team-grid-section { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 1rem; }
+  .team-grid-section h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.75rem; color: var(--ink2); }
+  .filter-row { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+  .fbtn {
+    font-size: 0.75rem; padding: 0.3rem 0.65rem; border-radius: 20px;
+    border: 1px solid var(--rule); background: transparent;
+    cursor: pointer; color: var(--ink3); font-family: 'Barlow', sans-serif;
+  }
+  .fbtn.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 0.5rem; }
+  .tc {
+    border: 1px solid var(--rule); border-radius: 8px;
+    padding: 0.5rem 0.6rem; font-size: 0.82rem; position: relative;
+  }
+  .tc.sold-card { opacity: 0.5; }
+  .tc.current-card { border: 2px solid var(--amber); background: var(--amber-light); }
+  .tc-flag { font-size: 1.4rem; }
+  .tc-name { font-weight: 500; line-height: 1.3; margin-top: 2px; }
+  .tc-grp { font-size: 0.72rem; color: var(--ink3); }
+  .tc-owner { font-size: 0.72rem; color: var(--green-dark); font-weight: 500; margin-top: 2px; }
+  .tc-price { position: absolute; top: 4px; right: 5px; font-size: 0.68rem; background: var(--green-light); color: var(--green-dark); padding: 1px 5px; border-radius: 8px; }
+
+  /* Right panel */
+  .right-panel { display: flex; flex-direction: column; gap: 1rem; }
+
+  .players-panel {
+    background: var(--surface); border: 1px solid var(--rule);
+    border-radius: 12px; padding: 1rem;
+  }
+  .players-panel h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.75rem; color: var(--ink2); }
+  .player-row {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.45rem 0; border-bottom: 1px solid var(--rule);
+    font-size: 0.9rem;
+  }
+  .player-row:last-child { border-bottom: none; }
+  .pav {
+    width: 26px; height: 26px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem; font-weight: 700; flex-shrink: 0;
+    font-family: 'Barlow Condensed', sans-serif;
+  }
+  .pname { flex: 1; font-weight: 500; }
+  .pteams { font-size: 0.75rem; color: var(--ink3); }
+  .pbudget { font-weight: 600; font-size: 0.9rem; }
+  .me-tag { font-size: 0.65rem; background: var(--green-light); color: var(--green-dark); padding: 1px 5px; border-radius: 8px; }
+
+  /* Results */
+  .results-section {
+    background: var(--surface); border: 1px solid var(--rule);
+    border-radius: 12px; padding: 1.25rem; margin-top: 1rem;
+  }
+  .results-section h2 { font-size: 1.6rem; font-weight: 700; margin-bottom: 1rem; }
+  .result-player { margin-bottom: 1.25rem; }
+  .result-player-hd { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.5rem; }
+  .result-teams { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .result-team-pill {
+    font-size: 0.8rem; padding: 0.2rem 0.6rem;
+    border: 1px solid var(--rule); border-radius: 20px;
+    background: var(--bg);
+  }
+
+  .msg { font-size: 0.85rem; padding: 0.5rem 0.75rem; border-radius: 6px; margin-top: 0.5rem; display: none; }
+  .msg.err { background: var(--red-light); color: var(--red); display: block; }
+  .msg.ok { background: var(--green-light); color: var(--green-dark); display: block; }
+
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-left: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .status-dot.online { background: var(--green); }
+  .status-dot.offline { background: var(--rule); }
+
+  .ended-banner {
+    background: var(--ink); color: #fff;
+    text-align: center; padding: 0.75rem;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1.2rem; font-weight: 700; letter-spacing: 0.05em;
+  }
+
+  .firebase-setup {
+    background: #fffbea; border: 1px solid #f0d060;
+    border-radius: 8px; padding: 1rem; margin-bottom: 1rem;
+    font-size: 0.88rem; line-height: 1.6;
+  }
+  .firebase-setup code {
+    background: #f5f5f5; border-radius: 4px;
+    padding: 0.1em 0.4em; font-size: 0.85em;
+  }
+  .firebase-setup a { color: var(--green-dark); }
+
+  /* Waiting room inside auction */
+  #waitingRoom {
+    text-align: center; padding: 3rem 1rem;
+  }
+  #waitingRoom h2 { font-size: 2rem; margin-bottom: 0.5rem; }
+  #waitingRoom p { color: var(--ink3); margin-bottom: 1.5rem; }
+  .waiting-dots span {
+    display: inline-block; width: 10px; height: 10px;
+    background: var(--green); border-radius: 50%; margin: 0 3px;
+    animation: bounce 1.2s ease-in-out infinite;
+  }
+  .waiting-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .waiting-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-8px)} }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ LOBBY ═══════════════ -->
+<div id="lobbyScreen">
+  <div class="lobby-logo">WC <span>2026</span> AUCTION</div>
+  <div class="lobby-sub">Live Multiplayer · 48 Teams · 2–10 Players</div>
+
+  <div class="lobby-card" id="lobbyCard">
+    <h2>Join or create a room</h2>
+
+    <div class="form-row">
+      <label>Your name</label>
+      <input type="text" id="myNameInput" placeholder="Enter your name" maxlength="20" />
+    </div>
+
+    <div id="hostSection">
+      <div class="form-row">
+        <label>Number of players</label>
+        <div style="display:flex;align-items:center;gap:0.75rem">
+          <input type="range" id="playerCountSlider" min="2" max="10" value="7"
+            style="flex:1;accent-color:var(--green)" />
+          <span id="playerCountLabel" style="font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:700;min-width:1.5rem;color:var(--green)">7</span>
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Budget per player (coins)</label>
+        <input type="number" id="budgetInput" value="1000" min="100" step="50" />
+      </div>
+      <div style="margin-bottom:0.75rem">
+        <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink3);margin-bottom:0.5rem">Player names (you are Player 1)</div>
+        <div class="players-grid" id="playerNamesGrid"></div>
+      </div>
+      <button class="btn btn-green" id="createRoomBtn">Create room</button>
+    </div>
+
+    <hr class="divider">
+
+    <div class="form-row">
+      <label>Join existing room</label>
+      <div style="display:flex;gap:0.5rem">
+        <input type="text" id="joinCodeInput" placeholder="Room code" maxlength="6" style="text-transform:uppercase;letter-spacing:0.15em;font-size:1.1rem" />
+        <button class="btn btn-outline btn-sm" id="joinRoomBtn">Join</button>
+      </div>
+    </div>
+
+    <div id="lobbyMsg" class="msg"></div>
+  </div>
+
+  <!-- Waiting room (host sees this after creating) -->
+  <div class="lobby-card" id="waitingCard" style="display:none;max-width:460px">
+    <h2>Room created!</h2>
+    <div class="room-code-display" id="displayCode"></div>
+    <div class="room-code-hint">Share this code with all players</div>
+    <div class="waiting-list" id="waitingList"></div>
+    <div id="startHint" style="font-size:0.85rem;color:var(--ink3);margin-bottom:1rem;display:none"></div>
+    <button class="btn btn-green" id="startAuctionBtn" disabled>Start Auction</button>
+    <p style="font-size:0.78rem;color:var(--ink3);margin-top:0.75rem;text-align:center">All players must join before starting</p>
+  </div>
+</div>
+
+<!-- ═══════════════ AUCTION ═══════════════ -->
+<div id="auctionScreen">
+  <div id="endedBanner" class="ended-banner" style="display:none">🏆 Auction Complete — See results below</div>
+  <div class="top-bar">
+    <div class="logo">WC <span>2026</span> AUCTION</div>
+    <div class="room-pill">Room <strong id="topRoomCode"></strong></div>
+    <div class="my-budget-pill" id="topBudget"></div>
+  </div>
+
+  <!-- Waiting for host to start -->
+  <div id="waitingRoom">
+    <h2>Waiting for host to start...</h2>
+    <p>You've joined the room. The auction will begin shortly.</p>
+    <div class="waiting-dots"><span></span><span></span><span></span></div>
+  </div>
+
+  <!-- Live auction UI -->
+  <div id="liveAuction" style="display:none">
+    <div class="auction-layout">
+      <div>
+        <!-- On the block -->
+        <div class="on-the-block" id="onTheBlock">
+          <div class="block-label">⚡ Now on the block</div>
+          <div id="soldToast" class="sold-toast"></div>
+          <div class="block-team" id="blockTeam">
+            <div class="block-flag" id="blockFlag">🏳</div>
+            <div>
+              <div class="block-name" id="blockName">—</div>
+              <div class="block-group" id="blockGroup"></div>
+            </div>
+          </div>
+          <div class="timer-row">
+            <div class="timer-bar-wrap"><div class="timer-bar" id="timerBar"></div></div>
+            <div class="timer-num" id="timerNum">30</div>
+          </div>
+          <div class="queue-strip">
+            <span>Next:</span>
+            <div class="queue-flags" id="queueFlags"></div>
+          </div>
+          <div class="bid-form" id="bidForm">
+            <input type="number" class="bid-input" id="bidAmountInput" placeholder="Your bid" min="1" />
+            <button class="btn btn-green btn-sm" id="bidBtn">Place Bid</button>
+          </div>
+          <div id="bidMsg" class="msg"></div>
+        </div>
+
+        <!-- Team grid -->
+        <div class="team-grid-section">
+          <h3>All teams</h3>
+          <div class="filter-row" id="filterRow"></div>
+          <div class="tgrid" id="teamGrid"></div>
+        </div>
+
+        <!-- Results (shown at end) -->
+        <div class="results-section" id="resultsSection" style="display:none">
+          <h2>🏆 Final Results</h2>
+          <div id="resultsContent"></div>
+        </div>
+      </div>
+
+      <!-- Right panel -->
+      <div class="right-panel">
+        <div class="players-panel">
+          <h3>Players</h3>
+          <div id="playersList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getDatabase, ref, set, get, onValue, update, runTransaction, serverTimestamp }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+// ── Teams data ──
+const TEAMS = [
+  {name:"Argentina",flag:"🇦🇷",group:"A"},{name:"Canada",flag:"🇨🇦",group:"A"},{name:"Chile",flag:"🇨🇱",group:"A"},{name:"Peru",flag:"🇵🇪",group:"A"},
+  {name:"Brazil",flag:"🇧🇷",group:"B"},{name:"Mexico",flag:"🇲🇽",group:"B"},{name:"Ecuador",flag:"🇪🇨",group:"B"},{name:"Bolivia",flag:"🇧🇴",group:"B"},
+  {name:"USA",flag:"🇺🇸",group:"C"},{name:"Uruguay",flag:"🇺🇾",group:"C"},{name:"Panama",flag:"🇵🇦",group:"C"},{name:"Venezuela",flag:"🇻🇪",group:"C"},
+  {name:"France",flag:"🇫🇷",group:"D"},{name:"Germany",flag:"🇩🇪",group:"D"},{name:"Portugal",flag:"🇵🇹",group:"D"},{name:"Morocco",flag:"🇲🇦",group:"D"},
+  {name:"Spain",flag:"🇪🇸",group:"E"},{name:"England",flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿",group:"E"},{name:"Netherlands",flag:"🇳🇱",group:"E"},{name:"Senegal",flag:"🇸🇳",group:"E"},
+  {name:"Italy",flag:"🇮🇹",group:"F"},{name:"Belgium",flag:"🇧🇪",group:"F"},{name:"Croatia",flag:"🇭🇷",group:"F"},{name:"Serbia",flag:"🇷🇸",group:"F"},
+  {name:"Japan",flag:"🇯🇵",group:"G"},{name:"South Korea",flag:"🇰🇷",group:"G"},{name:"Australia",flag:"🇦🇺",group:"G"},{name:"Iran",flag:"🇮🇷",group:"G"},
+  {name:"Saudi Arabia",flag:"🇸🇦",group:"H"},{name:"Qatar",flag:"🇶🇦",group:"H"},{name:"Iraq",flag:"🇮🇶",group:"H"},{name:"Uzbekistan",flag:"🇺🇿",group:"H"},
+  {name:"Nigeria",flag:"🇳🇬",group:"I"},{name:"Ivory Coast",flag:"🇨🇮",group:"I"},{name:"Egypt",flag:"🇪🇬",group:"I"},{name:"Algeria",flag:"🇩🇿",group:"I"},
+  {name:"Cameroon",flag:"🇨🇲",group:"J"},{name:"South Africa",flag:"🇿🇦",group:"J"},{name:"DR Congo",flag:"🇨🇩",group:"J"},{name:"Ghana",flag:"🇬🇭",group:"J"},
+  {name:"Costa Rica",flag:"🇨🇷",group:"K"},{name:"Honduras",flag:"🇭🇳",group:"K"},{name:"Jamaica",flag:"🇯🇲",group:"K"},{name:"Trinidad",flag:"🇹🇹",group:"K"},
+  {name:"Switzerland",flag:"🇨🇭",group:"L"},{name:"Denmark",flag:"🇩🇰",group:"L"},{name:"Turkey",flag:"🇹🇷",group:"L"},{name:"Poland",flag:"🇵🇱",group:"L"},
+];
+
+const COLORS = ["#534AB7","#0F6E56","#993C1D","#993556","#185FA5","#3B6D11","#85380B","#5C4A1E","#1A6E7A","#7A1A6E"];
+const BG_COLORS = ["#EEEDFE","#E1F5EE","#FAECE7","#FBEAF0","#E6F1FB","#EAF3DE","#FAEEDA","#F5EDD6","#E0F4F6","#F6E0F4"];
+const DEFAULT_PLAYERS = ["Player 1","Player 2","Player 3","Player 4","Player 5","Player 6","Player 7","Player 8","Player 9","Player 10"];
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+// ── State ──
+let db, roomCode, myName, myIndex, isHost = false;
+let state = null; // live synced state
+let timerInterval = null;
+let filterGroup = "ALL";
+
+// ── Firebase init (hardcoded) ──
+const FIREBASE_URL = 'https://wc-auction-147c0-default-rtdb.firebaseio.com';
+let db;
+
+function initFirebase() {
+  try {
+    const app = initializeApp({ databaseURL: FIREBASE_URL }, 'wc2026');
+    db = getDatabase(app);
+  } catch(e) { alert('Could not connect to Firebase: ' + e.message); }
+}
+
+// ── Init ──
+let playerCount = 7;
+
+function buildPlayerGrid(n) {
+  const grid = document.getElementById('playerNamesGrid');
+  // preserve existing values
+  const existing = [];
+  for (let i = 0; i < 10; i++) {
+    const el = document.getElementById('pn' + i);
+    existing[i] = el ? el.value : DEFAULT_PLAYERS[i];
+  }
+  grid.innerHTML = '';
+  for (let i = 0; i < n; i++) {
+    const val = existing[i] !== undefined ? existing[i] : DEFAULT_PLAYERS[i];
+    grid.innerHTML += `<div class="form-row" style="margin:0"><input type="text" id="pn${i}" placeholder="Player ${i+1}" value="${val}" /></div>`;
+  }
+}
+
+window.addEventListener('load', () => {
+  initFirebase();
+  buildPlayerGrid(playerCount);
+
+  // Wire up all button/input listeners (module scope can't use inline onclick)
+  document.getElementById('playerCountSlider').addEventListener('input', function() {
+    playerCount = parseInt(this.value);
+    document.getElementById('playerCountLabel').textContent = playerCount;
+    buildPlayerGrid(playerCount);
+  });
+  document.getElementById('createRoomBtn').addEventListener('click', createRoom);
+  document.getElementById('joinRoomBtn').addEventListener('click', joinRoom);
+  document.getElementById('bidBtn').addEventListener('click', placeBid);
+  document.getElementById('startAuctionBtn').addEventListener('click', hostStartAuction);
+});
+
+// ── Room creation ──
+window.createRoom = async function() {
+  if (!db) { alert('Connection error — please refresh and try again'); return; }
+  myName = document.getElementById('myNameInput').value.trim();
+  if (!myName) { alert('Enter your name'); return; }
+
+  const players = [];
+  for (let i = 0; i < playerCount; i++) {
+    players.push(document.getElementById('pn'+i).value.trim() || DEFAULT_PLAYERS[i]);
+  }
+  myIndex = players.findIndex(p => p.toLowerCase() === myName.toLowerCase());
+  if (myIndex === -1) myIndex = 0;
+
+  const budget = parseInt(document.getElementById('budgetInput').value) || 1000;
+  const queue = shuffle(TEAMS.map((_,i) => i));
+
+  roomCode = Math.random().toString(36).substring(2,8).toUpperCase();
+  isHost = true;
+
+  const roomData = {
+    players,
+    budgets: players.map(() => budget),
+    startBudget: budget,
+    teams: TEAMS.map(t => ({...t, owner: null, price: 0})),
+    queue,
+    currentTeamIdx: null,
+    status: 'waiting', // waiting | active | ended
+    joined: players.map(() => false),
+    timerStart: null,
+    timerDuration: 30,
+    createdAt: Date.now(),
+  };
+  roomData.joined[myIndex] = true;
+
+  await set(ref(db, 'rooms/' + roomCode), roomData);
+
+  document.getElementById('lobbyCard').style.display = 'none';
+  document.getElementById('waitingCard').style.display = 'block';
+  document.getElementById('displayCode').textContent = roomCode;
+
+  listenRoom(roomCode);
+}
+
+// ── Join room ──
+window.joinRoom = async function() {
+  if (!db) { alert('Connection error — please refresh and try again'); return; }
+  myName = document.getElementById('myNameInput').value.trim();
+  if (!myName) { showLobbyMsg('Enter your name', 'err'); return; }
+  const code = document.getElementById('joinCodeInput').value.trim().toUpperCase();
+  if (!code) { showLobbyMsg('Enter a room code', 'err'); return; }
+
+  const snap = await get(ref(db, 'rooms/' + code));
+  if (!snap.exists()) { showLobbyMsg('Room not found', 'err'); return; }
+
+  const data = snap.val();
+  myIndex = data.players.findIndex(p => p.toLowerCase() === myName.toLowerCase());
+  if (myIndex === -1) { showLobbyMsg('Your name is not in this room\'s player list', 'err'); return; }
+
+  roomCode = code;
+  await update(ref(db, 'rooms/' + roomCode + '/joined'), { [myIndex]: true });
+
+  document.getElementById('lobbyCard').style.display = 'none';
+  document.getElementById('auctionScreen').style.display = 'block';
+  document.getElementById('lobbyScreen').style.display = 'none';
+  document.getElementById('topRoomCode').textContent = roomCode;
+
+  if (data.status === 'active') {
+    document.getElementById('waitingRoom').style.display = 'none';
+    document.getElementById('liveAuction').style.display = 'block';
+  }
+
+  listenRoom(roomCode);
+}
+
+// ── Host starts auction ──
+window.hostStartAuction = async function() {
+  await update(ref(db, 'rooms/' + roomCode), { status: 'active' });
+  document.getElementById('lobbyScreen').style.display = 'none';
+  document.getElementById('auctionScreen').style.display = 'block';
+  document.getElementById('waitingRoom').style.display = 'none';
+  document.getElementById('liveAuction').style.display = 'block';
+  document.getElementById('topRoomCode').textContent = roomCode;
+  advanceToNextTeam();
+}
+
+// ── Listen to room state ──
+function listenRoom(code) {
+  onValue(ref(db, 'rooms/' + code), snap => {
+    if (!snap.exists()) return;
+    state = snap.val();
+    renderAll();
+  });
+}
+
+// ── Render everything from state ──
+function renderAll() {
+  if (!state) return;
+
+  // Top bar
+  const budget = state.budgets[myIndex];
+  document.getElementById('topBudget').textContent = `${state.players[myIndex]}: ${budget} coins`;
+
+  // Waiting room update
+  if (state.status === 'waiting') {
+    renderWaitingList();
+    return;
+  }
+
+  // Switch to live view if needed
+  document.getElementById('waitingRoom').style.display = 'none';
+  document.getElementById('liveAuction').style.display = 'block';
+
+  if (state.status === 'ended') {
+    document.getElementById('endedBanner').style.display = 'block';
+    renderResults();
+    renderPlayers();
+    renderTeamGrid();
+    return;
+  }
+
+  // Active auction
+  renderCurrentTeam();
+  renderPlayers();
+  renderTeamGrid();
+  renderQueue();
+  startClientTimer();
+}
+
+function renderWaitingList() {
+  const list = document.getElementById('waitingList');
+  if (!list) return;
+  const joined = state.joined || [];
+  list.innerHTML = state.players.map((p, i) => `
+    <div class="waiting-player">
+      <div class="dot ${joined[i] ? '' : 'empty'}"></div>
+      ${p} ${i === myIndex ? '<span class="me-tag">you</span>' : ''}
+    </div>`).join('');
+
+  const allJoined = state.players.every((_, i) => joined[i]);
+  const btn = document.getElementById('startAuctionBtn');
+  const hint = document.getElementById('startHint');
+  if (btn) {
+    btn.disabled = !allJoined || !isHost;
+    if (!allJoined) {
+      const waiting = state.players.filter((_, i) => !joined[i]);
+      if (hint) { hint.style.display = 'block'; hint.textContent = `Waiting for: ${waiting.join(', ')}`; }
+    } else if (hint) { hint.style.display = 'none'; }
+    if (!isHost) btn.textContent = 'Waiting for host to start...';
+  }
+}
+
+function renderCurrentTeam() {
+  const idx = state.currentTeamIdx;
+  if (idx === null || idx === undefined) return;
+  const t = state.teams[idx];
+  document.getElementById('blockFlag').textContent = t.flag;
+  document.getElementById('blockName').textContent = t.name;
+  document.getElementById('blockGroup').textContent = `Group ${t.group}`;
+}
+
+function startClientTimer() {
+  if (!state.timerStart) return;
+  clearInterval(timerInterval);
+  const duration = state.timerDuration * 1000;
+
+  timerInterval = setInterval(() => {
+    const elapsed = Date.now() - state.timerStart;
+    const left = Math.max(0, Math.ceil((duration - elapsed) / 1000));
+    const pct = Math.max(0, (duration - elapsed) / duration * 100);
+
+    document.getElementById('timerNum').textContent = left;
+    const bar = document.getElementById('timerBar');
+    bar.style.width = pct + '%';
+    bar.style.background = left > 10 ? 'var(--green)' : left > 5 ? 'var(--amber)' : 'var(--red)';
+    document.getElementById('timerNum').style.color = left > 10 ? 'var(--ink)' : left > 5 ? 'var(--amber)' : 'var(--red)';
+
+    if (left <= 0) {
+      clearInterval(timerInterval);
+      // Host handles auto-advance
+      if (isHost) {
+        setTimeout(() => {
+          if (state && state.status === 'active' &&
+              state.timerStart === state.timerStart) { // still same timer
+            advanceToNextTeam();
+          }
+        }, 1200);
+      }
+    }
+  }, 200);
+}
+
+function renderQueue() {
+  const q = state.queue || [];
+  const flags = q.slice(0, 7).map((idx, i) =>
+    `<span class="${i===0?'nxt':''}" title="${state.teams[idx].name}">${state.teams[idx].flag}</span>`
+  ).join('');
+  document.getElementById('queueFlags').innerHTML = flags;
+}
+
+function renderPlayers() {
+  document.getElementById('playersList').innerHTML = state.players.map((p, i) => {
+    const myTeams = state.teams.filter(t => t.owner === p).length;
+    return `<div class="player-row">
+      <div class="status-dot ${(state.joined||[])[i] ? 'online' : 'offline'}"></div>
+      <div class="pav" style="background:${BG_COLORS[i]};color:${COLORS[i]}">${p.slice(0,2).toUpperCase()}</div>
+      <div class="pname">${p} ${i===myIndex?'<span class="me-tag">you</span>':''}</div>
+      <div class="pteams">${myTeams}t</div>
+      <div class="pbudget">${state.budgets[i]}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderTeamGrid() {
+  const groups = ["ALL", ...[...new Set(TEAMS.map(t => t.group))].sort()];
+  document.getElementById('filterRow').innerHTML = groups.map(g =>
+    `<button class="fbtn ${g===filterGroup?'on':''}" onclick="setFilter('${g}')">${g}</button>`
+  ).join('');
+
+  const list = filterGroup === 'ALL' ? state.teams : state.teams.filter(t => t.group === filterGroup);
+  document.getElementById('teamGrid').innerHTML = list.map(t => {
+    const isCurrent = state.teams[state.currentTeamIdx] === t;
+    return `<div class="tc ${t.owner?'sold-card':''} ${isCurrent?'current-card':''}">
+      ${t.owner ? `<span class="tc-price">${t.price}</span>` : ''}
+      <div class="tc-flag">${t.flag}</div>
+      <div class="tc-name">${t.name}</div>
+      <div class="tc-grp">Grp ${t.group}</div>
+      ${t.owner ? `<div class="tc-owner">${t.owner}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function renderResults() {
+  document.getElementById('resultsSection').style.display = 'block';
+  document.getElementById('resultsContent').innerHTML = state.players.map((p, i) => {
+    const myTeams = state.teams.filter(t => t.owner === p).sort((a,b) => b.price - a.price);
+    const spent = state.startBudget - state.budgets[i];
+    return `<div class="result-player">
+      <div class="result-player-hd">
+        <div class="pav" style="background:${BG_COLORS[i]};color:${COLORS[i]};width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700">${p.slice(0,2).toUpperCase()}</div>
+        <strong style="font-size:1rem">${p}</strong>
+        <span style="font-size:0.82rem;color:var(--ink3)">${myTeams.length} teams · ${spent} spent</span>
+      </div>
+      <div class="result-teams">
+        ${myTeams.map(t => `<span class="result-team-pill">${t.flag} ${t.name} <span style="color:var(--ink3)">${t.price}</span></span>`).join('')
+          || '<span style="font-size:0.85rem;color:var(--ink3)">No teams</span>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Bidding ──
+window.placeBid = async function() {
+  const amount = parseInt(document.getElementById('bidAmountInput').value);
+  const msgEl = document.getElementById('bidMsg');
+  msgEl.className = 'msg';
+  msgEl.style.display = 'none';
+
+  if (!amount || amount < 1) { showBidMsg('Enter a valid amount', 'err'); return; }
+  if (amount > state.budgets[myIndex]) {
+    showBidMsg(`You only have ${state.budgets[myIndex]} coins`, 'err'); return;
+  }
+
+  const idx = state.currentTeamIdx;
+  if (idx === null || state.teams[idx].owner) {
+    showBidMsg('No team is currently up for bid', 'err'); return;
+  }
+
+  // Use transaction to prevent race conditions — highest bid when timer ends wins,
+  // but here we implement: first valid bid wins the team immediately
+  try {
+    document.getElementById('bidBtn').disabled = true;
+    const teamRef = ref(db, 'rooms/' + roomCode);
+    await runTransaction(teamRef, (current) => {
+      if (!current) return current;
+      if (current.teams[idx].owner) return; // already sold, abort
+      if (current.budgets[myIndex] < amount) return; // can't afford
+      current.teams[idx].owner = current.players[myIndex];
+      current.teams[idx].price = amount;
+      current.budgets[myIndex] -= amount;
+      return current;
+    });
+    document.getElementById('bidAmountInput').value = '';
+    showBidMsg('', '');
+    // Host advances
+    if (isHost) setTimeout(() => advanceToNextTeam(), 1500);
+  } catch(e) {
+    showBidMsg('Bid failed — try again', 'err');
+  }
+  document.getElementById('bidBtn').disabled = false;
+}
+
+// ── Host: advance to next team ──
+async function advanceToNextTeam() {
+  if (!isHost || !state) return;
+  const snap = await get(ref(db, 'rooms/' + roomCode));
+  const s = snap.val();
+  if (!s || s.status !== 'active') return;
+
+  if (!s.queue || s.queue.length === 0) {
+    await update(ref(db, 'rooms/' + roomCode), { status: 'ended', currentTeamIdx: null });
+    return;
+  }
+
+  const newQueue = [...s.queue];
+  const nextIdx = newQueue.shift();
+
+  await update(ref(db, 'rooms/' + roomCode), {
+    currentTeamIdx: nextIdx,
+    queue: newQueue,
+    timerStart: Date.now(),
+  });
+}
+
+// ── Helpers ──
+window.setFilter = function(g) { filterGroup = g; renderTeamGrid(); }
+
+function showLobbyMsg(txt, type) {
+  const el = document.getElementById('lobbyMsg');
+  el.textContent = txt; el.className = 'msg ' + type;
+}
+
+function showBidMsg(txt, type) {
+  const el = document.getElementById('bidMsg');
+  el.textContent = txt; el.className = 'msg ' + (type||'');
+  el.style.display = txt ? 'block' : 'none';
+}
+</script>
+</body>
+</html>
