@@ -525,7 +525,7 @@ let db, roomCode, myName, myIndex, isHost = false;
 let state = null; // live synced state
 let timerInterval = null;
 let filterGroup = "ALL";
-let fbUrl = '';
+let fbUrl = '' = 'https://wc-auction-147c0-default-rtdb.firebaseio.com/'
 
 // ── Firebase URL setup ──
 window.saveFbUrl = function() {
@@ -568,6 +568,7 @@ function buildPlayerGrid(n) {
 }
 
 window.addEventListener('load', () => {
+  if (fbUrl) { window.saveFbUrl(); }
   const saved = localStorage.getItem('wc2026_fbUrl');
   if (saved) {
     document.getElementById('fbUrlInput').value = saved;
